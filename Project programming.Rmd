@@ -1,0 +1,41 @@
+---
+title: "Energy poverty in the Netherlands"
+author: "Matthijs, David, Wessel, Quint, Zakaria"
+date: "2026-06-08"
+output: html_document
+---
+````markdown
+
+```{r setup, include=FALSE}
+# Hier laden we alle pakketten die nodig zijn voor de opdracht
+require(tidyverse)
+require(rmarkdown)
+require(yaml)
+library(tidyr)
+library(writexl)
+library(readxl)
+```markdown
+# Part 1: Identify a Social Problem
+## 1.1 Describe the Social Problem
+Hier gaan jullie straks typen waarom energie-armoede een probleem is in Nederland.
+
+# Part 2: Data Sourcing
+## 2.1 Load in the data
+## 2.2 Provide a short summary of the dataset(s)
+## 2.3 Describe the type of variables included
+
+# Part 3: Quantifying
+## 3.1 Data cleaning
+## 3.2 Generate necessary variables
+## 3.3 Visualize temporal variation
+## 3.4 Visualize spatial variation
+## 3.5 Visualize sub-population variation
+## 3.6 Event analysis
+
+# Part 4: Discussion
+## 4.1 Discuss your findings
+
+# Part 5: Reproducibility
+## 5.1 Github repository link
+## 5.2 Reference list
+```
