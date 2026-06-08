@@ -24,12 +24,12 @@ In recent years, energy prices in the Netherlands have increased significantly, 
 ```{r}
 # We laden de dataset rechtstreeks in vanaf een betrouwbare online bron (CBS StatLine)
 
-dataset <- read_csv2("data1.csv")
+my_data<- read_xlsx("data1.xlsx")
 ```
 ## 2.2 Provide a short summary of the dataset(s)
 
 ```{r}
-# Hiermee laten we de eerste 6 rijen van de dataset zien
+
 head(dataset)
 ```
 
