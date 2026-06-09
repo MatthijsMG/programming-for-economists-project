@@ -7,7 +7,6 @@ output: html_document
 
 
 ```{r setup, include=FALSE}
-# Hier laden we alle pakketten die nodig zijn voor de opdracht
 require(tidyverse)
 require(rmarkdown)
 require(yaml)
@@ -17,21 +16,22 @@ library(readxl)
 ```
 # Part 1: Identify a Social Problem
 ## 1.1 Describe the Social Problem
-In recent years, energy prices in the Netherlands have increased significantly, leading to a substantial rise in fixed costs of Dutch households. This increase in fixed expenses reduces the financial resources available for those household, limiting their capacity to meet other essential needs. To effectively address this growing issue among those households, it is crucial to quantify and understand the extent to which rising energy prices drive poverty rates among the Dutch households. 
+In recent years, energy prices in the Netherlands have increased significantly, leading to a substantial rise in fixed costs of Dutch households. This increase in fixed expenses reduces the financial resources available for those household, limiting their capacity to meet other essential needs. To effectively address this growing issue among those households, it is crucial to quantify and understand the extent to which rising energy prices drive poverty rates among the Dutch households.
 
 # Part 2: Data Sourcing
 ## 2.1 Load in the data
 ```{r}
-# We laden de dataset rechtstreeks in vanaf een betrouwbare online bron (CBS StatLine)
+raw_energie <- read_csv2("Energietarieven.csv")
+raw_inkomen <- read_csv2("Inkomen huishoudens samengevoegd.csv")
 
-my_data<- read_xlsx("data1.xlsx")
 ```
+
 ## 2.2 Provide a short summary of the dataset(s)
+The data sets utilized in this study consist of official statistics sourced from Statistics Netherlands (CBS). The first data set contains average consumer energy tariffs, while the second data set comprises Dutch household income levels across the years 2021, 2022, and 2023, broken down by province.
 
-```{r}
+A limitation of the first data set is that it does not capture the exact monthly or annual energy usage of individual households. However, it provides a reliable overview of the national average fixed and variable tariffs for both natural gas and electricity.
 
-head(dataset)
-```
+The second data set includes detailed information on standardized, median, and disposable household incomes. Utilizing these specific metrics ensures the most reliable and realistic representation of household financial capacity across the different Dutch provinces. 
 
 ## 2.3 Describe the type of variables included
 
