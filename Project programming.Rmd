@@ -59,32 +59,35 @@ dataset_berekend <- dataset_samengevoegd %>%
     # 1. We geven het inkomen meteen een kortere Engelse naam
     income_median = `Inkomen|Mediaan besteedbaar inkomen 1 000 euro`,
     
-    # 2. Berekening totale gaskosten (met de originele CBS-namen)
+    # 2. Total gas costs calc (met de originele CBS-namen)
     gas_costs = `Aardgas transporttarief inc BTW Euro/jaar` + 
                 `Aardgas leverings tarief vast inc btw Euro/jaar` + 
                 (1200 * (`Aardgas|Variabel leveringstarief inc btw Euro/m3` + `aardgas energiebelasting inc btw/m3`)),
     
-    # 3. Berekening totale stroomkosten (met de originele CBS-namen)
+    # 3. Total electricity costs calc (met de originele CBS-namen)
     electricity_costs = `elektriciteit transporttarief inc btwEuro/jaar` + 
                          `elek vast leveringstarief inc btwEuro/jaar` + 
                          (2500 * (`Elektriciteit|Variabel leveringstarief contractprijs inc btwEuro/kWh` + `Elektriciteit|Energiebelasting inc btwEuro/kWh`)),
     
-    # 4. Totale energiekosten gecombineerd
+    # 4. Total energy costs combined
     total_energy_costs = gas_costs + electricity_costs,
     
-    # 5. Berekening energy_burden (totale energiekosten)
+    # 5. energy_burden (totale energiekosten)
     energy_burden = (total_energy_costs / (income_median * 1000)) * 100,
     
-    # 6. Berekening gas_burden (pure gaskosten)
+    # 6. gas_burden (pure gaskosten)
     gas_burden = (gas_costs / (income_median * 1000)) * 100,
     
-    # 7. Berekening electricity_burden (pure stroomkosten)
+    # 7. electricity_burden (pure stroomkosten)
     electricity_burden = (electricity_costs / (income_median * 1000)) * 100
   )
 ```
 
 # Explanation new variables
 The new variables for this study are:
-Energy_burden, 
-Gas_burden
-Electricity_burden
+
+Energy_burden, represents the portion of the Dutch median disposable income that is spent on total energy costs (gas and electricity combined). 
+
+Gas_burden, represents the portion of the Dutch median disposable income that is spent on gas costs. This variable is calculated by adding the variable and fixed costs of gas based on a consumption of 1200m3 per year, the CBS guidelines show that 1200m3 is the normal consumption for a household per year. 
+
+Electricity_burden, represents the portion of the Dutch median disposable income that is spent on electricity costs. This variable is calculated by adding the variable and fixed costs of electricity based on a consumption of 2500kWh per year, the CBS guidelines show that 2500kWh is the normal consumption for a household per year.
