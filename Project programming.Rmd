@@ -23,21 +23,66 @@ In recent years, energy prices in the Netherlands have increased significantly, 
 ```{r}
 raw_energie <- read_csv2("Energietarieven.csv")
 raw_inkomen <- read_csv2("Inkomen huishoudens samengevoegd.csv")
-
+dataset_samengevoegd <- raw_inkomen %>%
+  left_join(raw_energie, by = "Jaar")
+colnames(raw_energie)
+colnames(raw_inkomen)
 ```
 
-## 2.2 Provide a short summary of the dataset(s)
+## 2.2 Short summary of the dataset(s)
 The data sets utilized in this study consist of official statistics sourced from Statistics Netherlands (CBS). The first data set contains average consumer energy tariffs, while the second data set comprises Dutch household income levels across the years 2021, 2022, and 2023, broken down by province.
 
 A limitation of the first data set is that it does not capture the exact monthly or annual energy usage of individual households. However, it provides a reliable overview of the national average fixed and variable tariffs for both natural gas and electricity.
 
 The second data set includes detailed information on standardized, median, and disposable household incomes. Utilizing these specific metrics ensures the most reliable and realistic representation of household financial capacity across the different Dutch provinces. 
 
-## 2.3 Describe the type of variables included
+## 2.3 Type of variables included
+
 
 # Part 3: Quantifying
 ## 3.1 Data cleaning
+
+# 1. Kolomnamen computervriendelijk maken
+
+# 2. De berekeningen uitvoeren met jouw exacte kolommen
+```{r}
+dataset_berekend <- dataset_samengevoegd %>%
+  mutate(
+    # 1. Totale gaskosten (Verbruik: 1200 m3 CBS data)
+    kosten_gas = `Aardgas transporttarief inc BTW Euro/jaar` + 
+                 `Aardgas leverings tarief vast inc btw Euro/jaar` + 
+                 (1200 * (`Aardgas|Variabel leveringstarief inc btw Euro/m3` + `aardgas energiebelasting inc btw/m3`)),
+    
+    # 2. Totale elektriciteitskosten (Verbruik: 2500 kWh CBS data)
+    kosten_stroom = `elektriciteit transporttarief inc btwEuro/jaar` + 
+                    `elek vast leveringstarief inc btwEuro/jaar` + 
+                    (2500 * (`Elektriciteit|Variabel leveringstarief contractprijs inc btwEuro/kWh` + `Elektriciteit|Energiebelasting inc btwEuro/kWh`)),
+    
+    # 3. Totale energiekosten per jaar
+    totale_energiekosten = kosten_gas + kosten_stroom,
+    
+    # 4. Energielastendruk in % (Mediaan inkomen * 1000)
+    energielastendruk = (totale_energiekosten / (`Inkomen|Mediaan besteedbaar inkomen 1 000 euro` * 1000)) * 100
+  )
+dataset_berekend <- dataset_berekend %>%
+  mutate(
+    # Gaslastendruk: Hoeveel % van het inkomen gaat puur naar gas?
+    gaslastendruk = (kosten_gas / (`Inkomen|Mediaan besteedbaar inkomen 1 000 euro` * 1000)) * 100,
+    
+    # Optioneel: Stroomlastendruk (dan heb je ze allebei!)
+    stroomlastendruk = (kosten_stroom / (`Inkomen|Mediaan besteedbaar inkomen 1 000 euro` * 1000)) * 100
+  )
+```
 ## 3.2 Generate necessary variables
+
+
+
+
+
+
+
+
+
 ## 3.3 Visualize temporal variation
 ## 3.4 Visualize spatial variation
 ## 3.5 Visualize sub-population variation
