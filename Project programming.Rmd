@@ -5,7 +5,6 @@ date: "2026-06-08"
 output: html_document
 ---
 
-
 ```{r setup, include=FALSE}
 require(tidyverse)
 require(rmarkdown)
@@ -14,12 +13,17 @@ library(tidyr)
 library(writexl)
 library(readxl)
 ```
+
 # Part 1: Identify a Social Problem
+
 ## 1.1 Describe the Social Problem
+
 In recent years, energy prices in the Netherlands have increased significantly, leading to a substantial rise in fixed costs of Dutch households. This increase in fixed expenses reduces the financial resources available for those household, limiting their capacity to meet other essential needs. To effectively address this growing issue among those households, it is crucial to quantify and understand the extent to which rising energy prices drive poverty rates among the Dutch households.
 
 # Part 2: Data Sourcing
+
 ## 2.1 Load in the data
+
 ```{r}
 raw_energie <- read_csv2("Energietarieven.csv")
 raw_inkomen <- read_csv2("Inkomen huishoudens samengevoegd.csv")
@@ -30,68 +34,57 @@ colnames(raw_inkomen)
 ```
 
 ## 2.2 Short summary of the dataset(s)
+
 The data sets utilized in this study consist of official statistics sourced from Statistics Netherlands (CBS). The first data set contains average consumer energy tariffs, while the second data set comprises Dutch household income levels across the years 2021, 2022, and 2023, broken down by province.
 
 A limitation of the first data set is that it does not capture the exact monthly or annual energy usage of individual households. However, it provides a reliable overview of the national average fixed and variable tariffs for both natural gas and electricity.
 
-The second data set includes detailed information on standardized, median, and disposable household incomes. Utilizing these specific metrics ensures the most reliable and realistic representation of household financial capacity across the different Dutch provinces. 
-
-## 2.3 Type of variables included
-
+The second data set includes detailed information on standardized, median, and disposable household incomes. Utilizing these specific metrics ensures the most reliable and realistic representation of household financial capacity across the different Dutch provinces.
 
 # Part 3: Quantifying
-## 3.1 Data cleaning
 
-# 1. Kolomnamen computervriendelijk maken
+# Data cleaning
 
-# 2. De berekeningen uitvoeren met jouw exacte kolommen
+During the import of the Excel tables from the CBS website, it was found that the names of the columns did not match. The name of the first column in the Income datasheet was "jaar", while the name of the first column in the Energie datasheet was "perioden". That issue caused an error in R, it was solved by naming both first columns "jaar". The energy data set was also cleaned by deleting the loose months and use the years instead. After these adjustments the data sets were merged by using left_join(), and R could read the files correctly.
+
+# Describing variabels
+
+
+# Creation of the new variables
+
 ```{r}
+# We berekenen de variabelen én hernoemen de oude kolommen in één stap!
 dataset_berekend <- dataset_samengevoegd %>%
   mutate(
-    # 1. Totale gaskosten (Verbruik: 1200 m3 CBS data)
-    kosten_gas = `Aardgas transporttarief inc BTW Euro/jaar` + 
-                 `Aardgas leverings tarief vast inc btw Euro/jaar` + 
-                 (1200 * (`Aardgas|Variabel leveringstarief inc btw Euro/m3` + `aardgas energiebelasting inc btw/m3`)),
+    # 1. We geven het inkomen meteen een kortere Engelse naam
+    income_median = `Inkomen|Mediaan besteedbaar inkomen 1 000 euro`,
     
-    # 2. Totale elektriciteitskosten (Verbruik: 2500 kWh CBS data)
-    kosten_stroom = `elektriciteit transporttarief inc btwEuro/jaar` + 
-                    `elek vast leveringstarief inc btwEuro/jaar` + 
-                    (2500 * (`Elektriciteit|Variabel leveringstarief contractprijs inc btwEuro/kWh` + `Elektriciteit|Energiebelasting inc btwEuro/kWh`)),
+    # 2. Berekening totale gaskosten (met de originele CBS-namen)
+    gas_costs = `Aardgas transporttarief inc BTW Euro/jaar` + 
+                `Aardgas leverings tarief vast inc btw Euro/jaar` + 
+                (1200 * (`Aardgas|Variabel leveringstarief inc btw Euro/m3` + `aardgas energiebelasting inc btw/m3`)),
     
-    # 3. Totale energiekosten per jaar
-    totale_energiekosten = kosten_gas + kosten_stroom,
+    # 3. Berekening totale stroomkosten (met de originele CBS-namen)
+    electricity_costs = `elektriciteit transporttarief inc btwEuro/jaar` + 
+                         `elek vast leveringstarief inc btwEuro/jaar` + 
+                         (2500 * (`Elektriciteit|Variabel leveringstarief contractprijs inc btwEuro/kWh` + `Elektriciteit|Energiebelasting inc btwEuro/kWh`)),
     
-    # 4. Energielastendruk in % (Mediaan inkomen * 1000)
-    energielastendruk = (totale_energiekosten / (`Inkomen|Mediaan besteedbaar inkomen 1 000 euro` * 1000)) * 100
-  )
-dataset_berekend <- dataset_berekend %>%
-  mutate(
-    # Gaslastendruk: Hoeveel % van het inkomen gaat puur naar gas?
-    gaslastendruk = (kosten_gas / (`Inkomen|Mediaan besteedbaar inkomen 1 000 euro` * 1000)) * 100,
+    # 4. Totale energiekosten gecombineerd
+    total_energy_costs = gas_costs + electricity_costs,
     
-    # Optioneel: Stroomlastendruk (dan heb je ze allebei!)
-    stroomlastendruk = (kosten_stroom / (`Inkomen|Mediaan besteedbaar inkomen 1 000 euro` * 1000)) * 100
+    # 5. Berekening energy_burden (totale energiekosten)
+    energy_burden = (total_energy_costs / (income_median * 1000)) * 100,
+    
+    # 6. Berekening gas_burden (pure gaskosten)
+    gas_burden = (gas_costs / (income_median * 1000)) * 100,
+    
+    # 7. Berekening electricity_burden (pure stroomkosten)
+    electricity_burden = (electricity_costs / (income_median * 1000)) * 100
   )
 ```
-## 3.2 Generate necessary variables
 
-
-
-
-
-
-
-
-
-## 3.3 Visualize temporal variation
-## 3.4 Visualize spatial variation
-## 3.5 Visualize sub-population variation
-## 3.6 Event analysis
-
-# Part 4: Discussion
-## 4.1 Discuss your findings
-
-# Part 5: Reproducibility
-## 5.1 Github repository link
-## 5.2 Reference list
-
+# Explanation new variables
+The new variables for this study are:
+Energy_burden, 
+Gas_burden
+Electricity_burden
