@@ -33,7 +33,7 @@ colnames(raw_energie)
 colnames(raw_inkomen)
 ```
 
-## 2.2 Short summary of the dataset(s)
+## 2.2 Short summary of the data sets
 
 The data sets utilized in this study consist of official statistics sourced from Statistics Netherlands (CBS). The first data set contains average consumer energy tariffs, while the second data set comprises Dutch household income levels across the years 2021, 2022, and 2023, broken down by province.
 
@@ -48,7 +48,6 @@ The second data set includes detailed information on standardized, median, and d
 During the import of the Excel tables from the CBS website, it was found that the names of the columns did not match. The name of the first column in the Income datasheet was "jaar", while the name of the first column in the Energie datasheet was "perioden". That issue caused an error in R, it was solved by naming both first columns "jaar". The energy data set was also cleaned by deleting the loose months and use the years instead. After these adjustments the data sets were merged by using left_join(), and R could read the files correctly.
 
 # Describing variabels
-
 
 # Creation of the new variables
 
@@ -84,10 +83,100 @@ dataset_berekend <- dataset_samengevoegd %>%
 ```
 
 # Explanation new variables
+
 The new variables for this study are:
 
-Energy_burden, represents the portion of the Dutch median disposable income that is spent on total energy costs (gas and electricity combined). 
+Energy_burden, represents the portion of the Dutch median disposable income that is spent on total energy costs (gas and electricity combined).
 
-Gas_burden, represents the portion of the Dutch median disposable income that is spent on gas costs. This variable is calculated by adding the variable and fixed costs of gas based on a consumption of 1200m3 per year, the CBS guidelines show that 1200m3 is the normal consumption for a household per year. 
+Gas_burden, represents the portion of the Dutch median disposable income that is spent on gas costs. This variable is calculated by adding the variable and fixed costs of gas based on a consumption of 1200m3 per year, the CBS guidelines show that 1200m3 is the normal consumption for a household per year.
 
-Electricity_burden, represents the portion of the Dutch median disposable income that is spent on electricity costs. This variable is calculated by adding the variable and fixed costs of electricity based on a consumption of 2500kWh per year, the CBS guidelines show that 2500kWh is the normal consumption for a household per year.
+Electricity_burden, represents the portion of the Dutch median disposable income that is spent on electricity costs. This variable is calculated by adding the variable and fixed costs of electricity based on a consumption of 2500kWh per year, the CBS guidelines show that 2500kWh is the normal consumption for a household per year(CBS,2023).
+
+# Data Visualisation
+
+# Figrure 1
+
+```{r}
+# 1. Data preperation
+plot_data <- dataset_berekend %>%
+  group_by(Jaar) %>%
+  summarise(
+    `Total Energy Burden` = mean(energy_burden, na.rm = TRUE),
+    `Gas Burden` = mean(gas_burden, na.rm = TRUE),
+    `Electricity Burden` = mean(electricity_burden, na.rm = TRUE)
+  ) %>%
+  pivot_longer(cols = ends_with("Burden"), names_to = "Burden_Type", values_to = "Percentage")
+
+# 2. Plotting the Graph
+ggplot(plot_data, aes(x = factor(Jaar), y = Percentage, group = Burden_Type, color = Burden_Type)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  labs(
+    title = "Figure 1: Household Energy Burden Components (2021-2023)",
+    subtitle = "National averages based on standard consumption",
+    x = "Year",
+    y = "Share of Median Disposable Income (%)",
+    color = "Burden Type"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+#Figure 2
+
+```{r}
+ggplot(dataset_berekend, aes(x = factor(Regios), y = energy_burden)) +
+  geom_boxplot(fill = "skyblue", alpha = 0.5, outlier.shape = NA) +
+  geom_jitter(width = 0.20, size = 3, aes(color = Regios), alpha = 0.8) + 
+  labs(
+    title = "Figure 2: Distribution of Total Energy Burden Across Provinces",
+    subtitle = "Variation in household energy burden (2021-2023)",
+    x = "Year",
+    y = "Share of Median Disposable Income (%)",
+    color = "Province/Region"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold")
+  )
+```
+#Figure 3
+```{r}
+data_2023 <- dataset_berekend %>% 
+  filter(Jaar == 2023)
+
+ggplot(data_2023, aes(x = reorder(Regios, energy_burden), y = energy_burden, fill = energy_burden)) +
+  geom_col() +
+  coord_flip() + # Draait de grafiek om zodat de provincienamen leesbaar zijn
+  scale_fill_gradient(low = "orange", high = "darkred") +
+  labs(
+    title = "Figure 3: Total Energy Burden by Province in 2023",
+    subtitle = "Provinces sorted from lowest to highest energy burden",
+    x = "Province / Region",
+    y = "Share of Median Disposable Income (%)",
+    fill = "Burden (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold")
+  )
+```
+```{r}
+ggplot(dataset_berekend, aes(x = income_median, y = energy_burden, color = factor(Jaar))) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) + # Voegt een trendlijn toe
+  labs(
+    title = "Figure 4: Correlation Between Median Income and Energy Burden",
+    subtitle = "Each point represents a province in a specific year",
+    x = "Median Disposable Income (x 1,000 Euro)",
+    y = "Share of Median Disposable Income (%)",
+    color = "Year"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    legend.position = "bottom"
+  )
+```
