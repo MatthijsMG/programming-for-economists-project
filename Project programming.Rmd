@@ -1,4 +1,9 @@
 ---
+title: "Project Programming"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
 title: "Energy poverty in the Netherlands"
 author: "Matthijs, David, Wessel, Quint, Zakaria"
 date: "2026-06-08"
@@ -37,11 +42,11 @@ colnames(raw_inkomen)
 
 ## 2.2 Short summary of the data sets
 
-The data sets utilized in this study consist of official statistics sourced from Statistics Netherlands (CBS). The first data set contains average consumer energy tariffs, while the second data set comprises Dutch household income levels across the years 2021, 2022, and 2023, broken down by province.
+The data sets utilized in this study consist of official statistics sourced from Statistics Netherlands (CBS). The first data set contains average consumer energy tariffs, while the second data set comprises Dutch household income levels across the years 2021, 2022, and 2023, broken down by province (CBS, 2023).
 
 A limitation of the first data set is that it does not capture the exact monthly or annual energy usage of individual households. However, it provides a reliable overview of the national average fixed and variable tariffs for both natural gas and electricity.
 
-The second data set includes detailed information on standardized, median, and disposable household incomes. Utilizing these specific metrics ensures the most reliable and realistic representation of household financial capacity across the different Dutch provinces.
+The second data set includes detailed information on standardized, median, and disposable household incomes. Utilizing these specific metrics ensures the most reliable and realistic representation of household financial capacity across the different Dutch provinces (CBS, 2023).
 
 # Part 3: Quantifying
 
@@ -50,7 +55,13 @@ The second data set includes detailed information on standardized, median, and d
 During the import of the Excel tables from the CBS website, it was found that the names of the columns did not match. The name of the first column in the Income datasheet was "jaar", while the name of the first column in the Energie datasheet was "perioden". That issue caused an error in R, it was solved by naming both first columns "jaar". The energy data set was also cleaned by deleting the loose months and use the years instead. After these adjustments the data sets were merged by using left_join(), and R could read the files correctly.
 
 # Describing variabels
+Jaar: The temporal identifier factor (2021, 2022, 2023).
 
+Regios: The geographic identifier containing both provincial jurisdictions and major municipalities.
+
+income_median: The median disposable household income expressed in thousands of Euros.
+
+energy_burden: The primary composite index representing the percentage of median disposable income spent on combined baseline energy costs.
 # Creation of the new variables
 
 ```{r}
@@ -96,7 +107,7 @@ Electricity_burden, represents the portion of the Dutch median disposable income
 
 # Data Visualisation
 
-# Figrure 1
+# Figrure 1 Temporal Variation
 
 ```{r}
 # 1. Data preperation
@@ -114,8 +125,8 @@ ggplot(temporal_data, aes(x = factor(Jaar), y = energy_burden, group = 1)) +
   ) +
   theme_minimal()
 ```
-
-#Figure 2
+This graph shows that the raw energy prices rise significantly and rise in percentage of the household income. The data only shows this raw energy price, because it is important to see what happens if the government does not intervene.
+#Figure 2 Spatial Variation 
 
 ```{r}
 spatial_data <- dataset_berekend %>% 
@@ -135,8 +146,8 @@ ggplot(spatial_data, aes(x = reorder(Regios, energy_burden), y = energy_burden, 
   theme_minimal() +
   theme(legend.position = "right")
 ```
-
-#Figure 3
+This graph shows that there is a significant difference between the region in the Netherlands. 
+#Figure 3 Sub Population Variation
 
 ```{r}
 sub_population_data <- dataset_berekend %>% 
@@ -160,6 +171,7 @@ ggplot(sub_population_data, aes(x = Type, y = energy_burden, fill = Type)) +
   theme(legend.position = "none")
 ```
 
+#Figure 4 Event Analysis
 ```{r}
 event_data <- dataset_berekend %>% 
   filter(Regios != "Nederland")
@@ -179,7 +191,31 @@ ggplot(event_data, aes(x = factor(Jaar), y = energy_burden)) +
   ) +
   theme_minimal()
 ```
-
+Once the war started in Ukraine in 2022 the energy prices for Dutch households rose. 
 # Discussion
 
-Our findings state that, within the limitations mentioned earlier, the share of the Dutch median income spent on energy bills increased significantly each year between 2021 and 2023. It is important to note that precise figures are difficult to determine. However, the fact remains that standard disposable income has not increased as rapidly as energy costs. This trend highlights the growing importance of policies aimed at improving energy affordability and protecting vulnerable households in the Netherlands.
+Our findings state that, within the limitations mentioned earlier, the share of the Dutch median income spent on energy bills increased significantly each year between 2021 and 2023. It is important to note that precise figures are difficult to determine. However, the fact remains that standard disposable income has not increased as rapidly as energy costs. This trend highlights the growing importance of policies aimed at improving energy affordability and protecting vulnerable households in the Netherlands. While our raw tariff data shows a structural increase in energy burdens, TNO reports that the actual number of households in official 'energy poverty' decreased in 2023 from 520,000 to 450,000 (Mulder et al., 2023, p. 3). This deviation is explained by aggressive, temporary government interventions, specifically the national price cap (prijsplafond) and the €1,300 energy allowance for low-income sub-populations. However this study shows that the raw energy tariffs for Dutch households rise significantly and will be a problem if the government does not intervene. 
+
+# Reproductibility
+
+How this study is produced:
+
+Project_programming.Rmd/
+
+├── README.md              # Project onboarding, data sources, and run instructions
+├── Project_programming.Rmd     # The primary executable Rmarkdown analysis report
+│
+├── data/
+│   ├── Energietarieven.csv                 # Raw CBS energy tariffs data
+│   └── Inkomen huishoudens samengevoegd.csv # Raw CBS regional income data
+
+We downloaded mutliple data sets from the CBS website for our data we made a average usage based on the dataset gemiddeld verbruik per huishouden. For the other datasets they are in the references.
+
+
+# References
+Mulder et al., 2023, p. 3 https://publications.tno.nl/publication/34642676/7qBbU9FJ/TNO-2024-R10801.pdf
+CBS Gemiddelde energietarieven voor consumenten https://www.cbs.nl/nl-nl/cijfers/detail/85592NED
+CBS Inkomen van huishoudens; huishoudenskenmerken, regio (indeling 2024) Nederland https://www.cbs.nl/nl-nl/cijfers/detail/86004NED
+CBS Gemiddelde verbruik per huishouden https://www.cbs.nl/nl-nl/cijfers/detail/81528NED
+
+
