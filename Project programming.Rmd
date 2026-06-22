@@ -70,18 +70,18 @@ energy_burden: The primary composite index representing the percentage of median
 # Creation of the new variables
 
 ```{r}
-# We berekenen de variabelen én hernoemen de oude kolommen in één stap!
+# New variables
 dataset_berekend <- dataset_samengevoegd %>%
   mutate(
-    # 1. We geven het inkomen meteen een kortere Engelse naam
+    # 1. Income
     income_median = `Inkomen|Mediaan besteedbaar inkomen 1 000 euro`,
     
-    # 2. Total gas costs calc (met de originele CBS-namen)
+    # 2. Total gas costs calc 
     gas_costs = `Aardgas transporttarief inc BTW Euro/jaar` + 
                 `Aardgas leverings tarief vast inc btw Euro/jaar` + 
                 (1200 * (`Aardgas|Variabel leveringstarief inc btw Euro/m3` + `aardgas energiebelasting inc btw/m3`)),
     
-    # 3. Total electricity costs calc (met de originele CBS-namen)
+    # 3. Total electricity costs calc 
     electricity_costs = `elektriciteit transporttarief inc btwEuro/jaar` + 
                          `elek vast leveringstarief inc btwEuro/jaar` + 
                          (2500 * (`Elektriciteit|Variabel leveringstarief contractprijs inc btwEuro/kWh` + `Elektriciteit|Energiebelasting inc btwEuro/kWh`)),
@@ -124,8 +124,7 @@ ggplot(temporal_data, aes(x = factor(Jaar), y = energy_burden, group = 1)) +
   geom_line(color = "darkblue", linewidth = 1.3) +
   geom_point(color = "red", size = 4) +
   
-  # HIER GEWELDIGE EXTRA RUIMTE OP DE Y-AS:
-  # Je kunt de 0 en 12 aanpassen naar wat het mooiste uitkomt voor jouw cijfers
+
   ylim(0, 12) + 
   
   labs(
@@ -146,27 +145,25 @@ This graph shows that the raw energy prices rise significantly and rise in perce
 library(tidyverse)
 library(sf)
 
-# 1. VERWIJZEN NAAR HET BESTAND
-# Zorg dat de bestandsnaam hier EXACT gelijk is aan de naam in je map
+# 1. Reading map
+
 cbs_kaart <- st_read("Kaart.json")
 
-# 2. DATA KOPPELEN
-# We koppelen op de kolom die in het CBS-bestand de provincienamen bevat.
-# Meestal heet deze kolom 'statnaam', 'naam' of 'PROV_NAAM'.
-# Tip: Typ 'colnames(cbs_kaart)' in je console om de juiste naam te checken!
+# 2. DATA
+
 jouw_percentages <- tibble(
   statnaam = c("Groningen", "Fryslân", "Drenthe", "Overijssel", "Flevoland", 
                "Gelderland", "Utrecht", "Noord-Holland", "Zuid-Holland", 
                "Zeeland", "Noord-Brabant", "Limburg"),
-  energy_burden = c(9.5, 10.1, 8.4, 7.8, 8.8, 8.2, 7.5, 7.9, 8.1, 8.0, 8.3, 8.4)
+  energy_burden = c(10.08, 8.94, 8.34, 8.36, 7.7, 8.22, 7.7, 8.5, 8.6, 8.4, 8.1, 9.0)
 )
 
-# 3. KOPPELEN
-# Als je de juiste kolomnaam hebt gevonden, vervang 'statnaam' hieronder indien nodig.
+# 3. Merge
+
 kaart_finaal <- cbs_kaart %>%
   left_join(jouw_percentages, by = "statnaam")
 
-# 4. PLOTTEN
+# 4. PLOT
 ggplot(data = kaart_finaal) +
   geom_sf(aes(fill = energy_burden), color = "white", linewidth = 0.5) +
   scale_fill_gradient(
@@ -182,8 +179,7 @@ ggplot(data = kaart_finaal) +
 ```{r subpopulation_analysis_fixed, message=FALSE, warning=FALSE}
 library(tidyverse)
 
-# 1. Maak een schone indeling ZONDER overlap
-# Zorg dat de pijl HELEMAAL VOORAAN staat, en de pipes ERTUSSEN
+# 1. Data and Cleaning
 subgroep_data <- dataset_berekend %>%
   filter(Jaar == 2023) %>%
   filter(Regios != "Nederland") %>%
@@ -193,22 +189,21 @@ subgroep_data <- dataset_berekend %>%
     TRUE ~ NA_character_
   )) %>%
   filter(!is.na(Subgroup_Type))
-# 2. We zetten het landelijk gemiddelde handmatig vast op basis van jouw data (8.46%)
-# Hierdoor hoeft R niks te zoeken en is de error DIRECT verdwenen!
+# 2. National average
 national_avg <- 8.466532
 
-# 3. Teken de boxplot zonder overlap met de strakke rode gemiddelde-lijn
+# 3. Boxplot Graph
 ggplot(subgroep_data, aes(x = Subgroup_Type, y = energy_burden, fill = Subgroup_Type)) +
   geom_boxplot(alpha = 0.6, outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.15, alpha = 0.6, color = "black", size = 2, show.legend = FALSE) +
   
-  # Teken de rode streeplijn voor het landelijk gemiddelde over de hele breedte
+
   geom_hline(yintercept = national_avg, linetype = "dashed", color = "red", linewidth = 1) +
   annotate("text", x = 1.5, y = national_avg + 0.1, 
            label = paste0("National Average (", round(national_avg, 1), "%)"), 
            color = "red", fontface = "bold", hjust = 0.5) +
   ylim(7.5, 11.0) +
-  # Nette, professionele kleuren (Zacht rood en zacht blauw)
+#colors
   scale_fill_manual(values = c("Major Cities" = "lightcoral", "Provinces (Excl. Major Cities)" = "lightskyblue")) +
   labs(
     title = "3. Sub-population Analysis: Cities vs. Rural Provinces (2023)",
@@ -224,25 +219,25 @@ ggplot(subgroep_data, aes(x = Subgroup_Type, y = energy_burden, fill = Subgroup_
 ```
 #Figure 4 Event Analysis
 ```{r}
-# 1. Splits de data op in het landelijk gemiddelde (voor de lijn) en de provincies (voor de stippen)
+#data
 gemiddelde_data <- dataset_berekend %>% filter(Regios == "Nederland")
 provincie_data  <- dataset_berekend %>% filter(Regios != "Nederland")
 
-# 2. Teken de grafiek
+#graph
 ggplot() +
-  # Teken de losse provincies als subtiele stipjes op de achtergrond
+  
   geom_jitter(data = provincie_data, aes(x = factor(Jaar), y = energy_burden), 
               width = 0.15, alpha = 0.4, color = "darkred", size = 2) +
   
-  # Teken de dikke, duidelijke trendlijn van het landelijk gemiddelde
+  
   geom_line(data = gemiddelde_data, aes(x = factor(Jaar), y = energy_burden, group = 1), 
             color = "red", linewidth = 1.5) +
   
-  # Zet ook een duidelijk groter punt op de lijn voor elk jaar
+  
   geom_point(data = gemiddelde_data, aes(x = factor(Jaar), y = energy_burden), 
              color = "darkred", size = 3) +
   
-  # De verticale streeplijn die de start van de energiecrisis markeert (begin 2022)
+ 
   geom_vline(xintercept = 1.5, linetype = "dashed", color = "black", linewidth = 1) +
   annotate("text", x = 1.55, y = max(dataset_berekend$energy_burden) - 0.5, 
            label = "Start Energy Crisis (2022)", hjust = 0, fontface = "italic", color = "black") +
@@ -266,18 +261,9 @@ Our findings state that, within the limitations mentioned earlier, the share of 
 
 # Reproductibility
 
-How this study is produced:
+All data, scripts, and the local geographic mapping files used in this project are publicly available and can be fully reproduced. The complete workflow, raw datasets, and version history can be accessed directly via the GitHub repository:
 
-Project_programming.Rmd/
-
-├── README.md              # Project onboarding, data sources, and run instructions
-├── Project_programming.Rmd     # The primary executable Rmarkdown analysis report
-│
-├── data/
-│   ├── Energietarieven.csv                 # Raw CBS energy tariffs data
-│   └── Inkomen huishoudens samengevoegd.csv # Raw CBS regional income data
-
-We downloaded mutliple data sets from the CBS website for our data we made a average usage based on the dataset gemiddeld verbruik per huishouden. For the other datasets they are in the references.
+Github link: https://github.com/MatthijsMG/programming-for-economists-project
 
 
 # References
