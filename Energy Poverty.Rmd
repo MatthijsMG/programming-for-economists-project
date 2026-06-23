@@ -1,0 +1,283 @@
+---
+title: "Project Programming"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+title: "Energy poverty in the Netherlands"
+author: "Matthijs, David, Wessel, Quint, Zakaria"
+date: "2026-06-08"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+require(tidyverse)
+require(rmarkdown)
+require(yaml)
+library(tidyr)
+library(writexl)
+library(readxl)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+```
+
+# Part 1: Identify a Social Problem
+
+## 1.1 Describe the Social Problem
+
+In recent years, energy prices in the Netherlands have increased significantly, leading to a substantial rise in fixed costs of Dutch households. This increase in fixed expenses reduces the financial resources available for those household, limiting their capacity to meet other essential needs. The existing macro economic studies often summarize the national average and frequently overlook regional differences and vulnerable sub populations. To effectively address this growing issue, it is crucial to quantify and understand the extent to which rising energy prices drive poverty rates among Dutch households, thereby bridging the gap in existing literature regarding regional energy burden variances.
+
+# Part 2: Data Sourcing
+
+## 2.1 Load in the data
+
+```{r}
+raw_energie <- read_csv2("Energietarieven.csv")
+raw_inkomen <- read_csv2("Inkomen huishoudens samengevoegd.csv")
+dataset_samengevoegd <- raw_inkomen %>%
+  left_join(raw_energie, by = "Jaar")
+colnames(raw_energie)
+colnames(raw_inkomen)
+```
+
+## 2.2 Short summary of the data sets
+
+The data sets utilized in this study consist of official statistics sourced from Statistics Netherlands (CBS). The first data set contains average consumer energy tariffs, while the second data set comprises Dutch household income levels across the years 2021, 2022, and 2023, broken down by province (CBS, 2023).
+
+A limitation of the first data set is that it does not capture the exact monthly or annual energy usage of individual households. However, it provides a reliable overview of the national average fixed and variable tariffs for both natural gas and electricity.
+
+The second data set includes detailed information on standardized, median, and disposable household incomes. Utilizing these specific metrics ensures the most reliable and realistic representation of household financial capacity across the different Dutch provinces (CBS, 2023).
+
+Furthermore, it is essential to determine the energy consumption of Dutch households in order to calculate the actual costs. For the baseline figures, we adhere to the CBS guidelines, which assume an average consumption of 2500 kWh of electricity and 1200 m³ of natural gas per year for the standard Dutch household (CBS, 2023). It is crucial to emphasize that these figures represent a national average. In reality, lower-income households generally reside in poorly insulated houses, meaning they likely consume more gas and electricity than estimated. Unfortunately, using a national average cannot account for every unique household situation. Consequently, the outcomes of this study may not perfectly reflect the reality of all individual households in the Netherlands. Nevertheless, it successfully highlights the broader trends and structural costs faced by the average household, which remains highly relevant for this analysis.
+
+# Part 3: Quantifying
+
+# Data cleaning
+
+During the import of the Excel tables from the CBS website, it was found that the names of the columns did not match. The name of the first column in the Income datasheet was "jaar", while the name of the first column in the Energie datasheet was "perioden". That issue caused an error in R, it was solved by naming both first columns "jaar". The energy data set was also cleaned by deleting the loose months and use the years instead. After these adjustments the data sets were merged by using left_join(), and R could read the files correctly.
+
+# Describing variabels
+Jaar (factor): The temporal identifier factor (2021, 2022, 2023).
+
+Regios (character): The geographic identifier containing both provincial jurisdictions and major municipalities.
+
+income_median (numeric): The median disposable household income expressed in thousands of Euros.
+
+energy_burden (numeric): The primary composite index representing the percentage of median disposable income spent on combined baseline energy costs.
+
+# Creation of the new variables
+
+```{r}
+# New variables
+dataset_berekend <- dataset_samengevoegd %>%
+  mutate(
+    # 1. Income
+    income_median = `Inkomen|Mediaan besteedbaar inkomen 1 000 euro`,
+    
+    # 2. Total gas costs calc 
+    gas_costs = `Aardgas transporttarief inc BTW Euro/jaar` + 
+                `Aardgas leverings tarief vast inc btw Euro/jaar` + 
+                (1200 * (`Aardgas|Variabel leveringstarief inc btw Euro/m3` + `aardgas energiebelasting inc btw/m3`)),
+    
+    # 3. Total electricity costs calc 
+    electricity_costs = `elektriciteit transporttarief inc btwEuro/jaar` + 
+                         `elek vast leveringstarief inc btwEuro/jaar` + 
+                         (2500 * (`Elektriciteit|Variabel leveringstarief contractprijs inc btwEuro/kWh` + `Elektriciteit|Energiebelasting inc btwEuro/kWh`)),
+    
+    # 4. Total energy costs combined
+    total_energy_costs = gas_costs + electricity_costs,
+    
+    # 5. energy_burden (totale energiekosten)
+    energy_burden = (total_energy_costs / (income_median * 1000)) * 100,
+    
+    # 6. gas_burden (pure gaskosten)
+    gas_burden = (gas_costs / (income_median * 1000)) * 100,
+    
+    # 7. electricity_burden (pure stroomkosten)
+    electricity_burden = (electricity_costs / (income_median * 1000)) * 100
+  )
+```
+
+# Explanation new variables
+
+The new variables for this study are:
+
+Energy_burden, represents the portion of the Dutch median disposable income that is spent on total energy costs (gas and electricity combined).
+
+Gas_burden, represents the portion of the Dutch median disposable income that is spent on gas costs. This variable is calculated by adding the variable and fixed costs of gas based on a consumption of 1200m3 per year, the CBS guidelines show that 1200m3 is the normal consumption for a household per year.
+
+Electricity_burden, represents the portion of the Dutch median disposable income that is spent on electricity costs. This variable is calculated by adding the variable and fixed costs of electricity based on a consumption of 2500kWh per year, the CBS guidelines show that 2500kWh is the normal consumption for a household per year(CBS,2023).
+
+# Data Visualisation
+
+# Figrure 1 Temporal Variation
+
+```{r temporal_analysis_ruimte, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+temporal_data <- dataset_berekend %>% 
+  filter(Regios == "Nederland")
+
+ggplot(temporal_data, aes(x = factor(Jaar), y = energy_burden, group = 1)) +
+  geom_line(color = "darkblue", linewidth = 1.3) +
+  geom_point(color = "red", size = 4) +
+  
+
+  ylim(0, 12) + 
+  
+  labs(
+    title = "1. Temporal Analysis: Development of Energy Burden (2021-2023)",
+    subtitle = "National average of energy costs as % of disposable income",
+    x = "Year",
+    y = "Energy Burden (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14)
+  )
+```
+Figure 1 clearly shows how the national energy burden has significantly rose over the last few years, rising from just under 5% in 2021 to about 8.5% in 2023. This steady steepening highlights a severe macroeconomic shift: fixed energy utility costs have systematically outpaced the growth of median disposable household incomes. The continuous upward trend implies that without permanent structural adjustments, the baseline cost of living in the Netherlands is undergoing a fundamental shift that places long-term pressure on household budgets.
+
+#Figure 2 Spatial Variation 
+```{r cbs_lokaal_definitief, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(sf)
+
+# 1. Reading map
+
+cbs_kaart <- st_read("Kaart.json")
+
+# 2. DATA
+
+jouw_percentages <- tibble(
+  statnaam = c("Groningen", "Fryslân", "Drenthe", "Overijssel", "Flevoland", 
+               "Gelderland", "Utrecht", "Noord-Holland", "Zuid-Holland", 
+               "Zeeland", "Noord-Brabant", "Limburg"),
+  energy_burden = c(10.08, 8.94, 8.34, 8.36, 7.7, 8.22, 7.7, 8.5, 8.6, 8.4, 8.1, 9.0)
+)
+
+# 3. Merge
+
+kaart_finaal <- cbs_kaart %>%
+  left_join(jouw_percentages, by = "statnaam")
+
+# 4. PLOT
+ggplot(data = kaart_finaal) +
+  geom_sf(aes(fill = energy_burden), color = "white", linewidth = 0.5) +
+  scale_fill_gradient(
+    low = "#D1E5F0", 
+    high = "#2166AC",
+    labels = function(x) paste0(round(x, 1), "%")
+  ) +
+  theme_void() +
+  labs(title = "Energy Burden by Province", fill = "Energy Burden")
+```
+Figure 2 clearly shows that there is a major difference in the energy burden for Dutch households, with a notable peak of 10.8 percent in the province of Groningen. One of the main reasons for this is that the standardized median disposable income in Groningen is lower than in other parts of the country. This clearly demonstrates that there are significant differences between the regions in the Netherlands, and that this information is highly important when designing and implementing policy measures.
+
+#Figure 3 Sub Population
+```{r subpopulation_analysis_fixed, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+# 1. Data and Cleaning
+subgroep_data <- dataset_berekend %>%
+  filter(Jaar == 2023) %>%
+  filter(Regios != "Nederland") %>%
+  mutate(Subgroup_Type = case_when(
+    Regios %in% c("Amsterdam", "Rotterdam", "Den Haag", "Utrecht") ~ "Major Cities",
+    grepl("\\(PV\\)", Regios) ~ "Provinces (Excl. Major Cities)",
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!is.na(Subgroup_Type))
+# 2. National average
+national_avg <- 8.466532
+
+# 3. Boxplot Graph
+ggplot(subgroep_data, aes(x = Subgroup_Type, y = energy_burden, fill = Subgroup_Type)) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA, show.legend = FALSE) +
+  geom_jitter(width = 0.15, alpha = 0.6, color = "black", size = 2, show.legend = FALSE) +
+  
+
+  geom_hline(yintercept = national_avg, linetype = "dashed", color = "red", linewidth = 1) +
+  annotate("text", x = 1.5, y = national_avg + 0.1, 
+           label = paste0("National Average (", round(national_avg, 1), "%)"), 
+           color = "red", fontface = "bold", hjust = 0.5) +
+  ylim(7.5, 11.0) +
+#colors
+  scale_fill_manual(values = c("Major Cities" = "lightcoral", "Provinces (Excl. Major Cities)" = "lightskyblue")) +
+  labs(
+    title = "3. Sub-population Analysis: Cities vs. Rural Provinces (2023)",
+    subtitle = "Comparing energy burden across mutually exclusive regional types to prevent overlap",
+    x = "Regional Sub-population Type",
+    y = "Energy Burden (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    panel.grid.minor = element_blank()
+  )
+```
+The national average shown in this plot highlights the limitations of using centralized data for policy-making. If future regulations are tailored to the national average, it will fail to protect the three most vulnerable regions in our study, leaving them with a financial shock as energy prices rise.
+
+#Figure 4 Event Analysis
+```{r}
+#data
+gemiddelde_data <- dataset_berekend %>% filter(Regios == "Nederland")
+provincie_data  <- dataset_berekend %>% filter(Regios != "Nederland")
+
+#graph
+ggplot() +
+  
+  geom_jitter(data = provincie_data, aes(x = factor(Jaar), y = energy_burden), 
+              width = 0.15, alpha = 0.4, color = "darkred", size = 2) +
+  
+  
+  geom_line(data = gemiddelde_data, aes(x = factor(Jaar), y = energy_burden, group = 1), 
+            color = "red", linewidth = 1.5) +
+  
+  
+  geom_point(data = gemiddelde_data, aes(x = factor(Jaar), y = energy_burden), 
+             color = "darkred", size = 3) +
+  
+ 
+  geom_vline(xintercept = 1.5, linetype = "dashed", color = "black", linewidth = 1) +
+  annotate("text", x = 1.55, y = max(dataset_berekend$energy_burden) - 0.5, 
+           label = "Start Energy Crisis (2022)", hjust = 0, fontface = "italic", color = "black") +
+  
+  labs(
+    title = "4. Event Analysis: Impact of the 2022 Energy Crisis",
+    subtitle = "Average national trend (line) with provincial distribution (dots)",
+    x = "Year",
+    y = "Energy Burden (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    panel.grid.minor = element_blank()
+  )
+```
+The war in Ukraine in 2022 caused significant upward pressure on energy prices. This was further intensified in 2023, as many households were required to sign new energy contracts while simultaneously losing government support, specifically the reduction of energy taxes on natural gas. 
+
+# Discussion
+
+Our findings state that, within the limitations mentioned earlier, the share of the Dutch median income spent on energy bills increased significantly each year between 2021 and 2023. It is important to note that precise figures are difficult to determine. However, the fact remains that standard disposable income has not increased as rapidly as energy costs. This trend highlights the growing importance of policies aimed at improving energy affordability and protecting vulnerable households in the Netherlands. While our raw tariff data shows a structural increase in energy burdens, TNO reports that the actual number of households in official 'energy poverty' decreased in 2023 from 520,000 to 450,000 (Mulder et al., 2023, p. 3). This deviation is explained by aggressive, temporary government interventions, specifically the national price cap (prijsplafond) and the €1,300 energy allowance for low-income sub-populations. However this study shows that the raw energy tariffs for Dutch households rise significantly and will be a problem if the government does not intervene. 
+
+# Reproductibility
+
+All data, scripts, and the local geographic mapping files used in this project are publicly available and can be fully reproduced. The complete workflow, raw datasets, and version history can be accessed directly via the GitHub repository:
+
+Github link: https://github.com/MatthijsMG/programming-for-economists-project
+
+
+# References
+- Mulder et al., 2023, p. 3 https://publications.tno.nl/publication/34642676/7qBbU9FJ/TNO-2024-R10801.pdf
+
+- CBS Gemiddelde energietarieven voor consumenten https://www.cbs.nl/nl-nl/cijfers/detail/85592NED
+
+- CBS Inkomen van huishoudens; huishoudenskenmerken, regio (indeling 2024) Nederland https://www.cbs.nl/nl-nl/cijfers/detail/86004NED
+
+- CBS Gemiddelde verbruik per huishouden https://www.cbs.nl/nl-nl/cijfers/detail/81528NED
+
+
